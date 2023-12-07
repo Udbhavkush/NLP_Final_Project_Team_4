@@ -8,6 +8,10 @@
           <mappings>
             <mapping deploy="/home/ubuntu/NLP_Project" local="$PROJECT_DIR$" web="/" />
           </mappings>
+          <excludedPaths>
+            <excludedPath path="/home/ubuntu/NLP_Project/Dataset/Twitter dataset" />
+            <excludedPath local="true" path="$PROJECT_DIR$/Dataset/Twitter dataset" />
+          </excludedPaths>
         </serverdata>
       </paths>
     </serverData>
