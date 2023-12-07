@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="AWS_Cloud_Connection" remoteFilesAllowedToDisappearOnAutoupload="false" autoUploadExternalChanges="true">
+  <component name="PublishConfigData" autoUpload="Always" serverName="NLP" remoteFilesAllowedToDisappearOnAutoupload="false" autoUploadExternalChanges="true">
     <serverData>
-      <paths name="AWS_Cloud_Connection">
+      <paths name="NLP">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/ubuntu/NLP/Final_Project" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/home/ubuntu/NLP_Project" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
