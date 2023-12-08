@@ -58,7 +58,6 @@ sample_size = 151572
 sample_size_control = 1364148
 
 epochs = 5
-
 MODEL_NAME =''
 max_length = 128
 
@@ -129,6 +128,7 @@ class CustomDataLoader:
         return test_loader
 
 
+
 train_df = pd.read_csv(TRAIN_DATA_FILE)
 # test_df = pd.read_csv(TEST_DATA_FILE)
 #final_sample = pd.read_csv(FINAL_TRAIN_FILE)
@@ -137,6 +137,7 @@ classes = [
     'EATING DISORDER', 'SCHIZOPHRENIA', 'OCD', 'PTSD', 'ANXIETY',
     'BIPOLAR', 'AUTISM', 'DEPRESSION', 'ADHD'
 ]
+
 
 
 sampled_data = []
