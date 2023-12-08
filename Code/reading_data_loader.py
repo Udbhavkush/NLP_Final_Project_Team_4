@@ -1,27 +1,21 @@
 
-from sklearn.model_selection import train_test_split
-import pandas as pd
-import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader
 import os
-from sklearn.preprocessing import LabelEncoder
 import pickle
+import numpy as np
+from torch.utils.data import Dataset, DataLoader
 '''
-usage :
-load the files and start running 
-LABEL_ENCODER_FILE = MODEL_DIR + 'label_encoder.pkl'
-TRAIN_DATA_LOADER =  MODEL_DIR + 'train_loader.pkl'
-VAL_DATA_LOADER =  MODEL_DIR + 'val_loader.pkl'
+to run this file :
 
-with open(TRAIN_DATA_LOADER, 'rb') as f:
-    loaded_train_loader = pickle.load(f)
-with open(VAL_DATA_LOADER, 'rb') as f:
-    loaded_val_loader = pickle.load(f)
+from load_data import CustomDataLoader
+data_loader = CustomDataLoader()
+training_generator, test_generator,dev_generator  = data_loader.read_data()
 
-for batch_X,batch_y in loaded_train_loader:
+for batch_X, batch_y in train_loader:
     print(batch_X)
-    break
+    print(batch_y)
+    #training processing
+
 '''
 ######### all paths for the project
 OR_PATH = os.getcwd()
@@ -32,12 +26,12 @@ sep = os.path.sep
 os.chdir(OR_PATH)
 
 #dataset files
-train_file = 'train_data.csv'
-test_file = 'test_data.csv'
+# train_file = 'train_data.csv'
+# test_file = 'test_data.csv'
 final_train = 'final_train.csv'
 final_test = 'final_test.csv'
-TRAIN_DATA_FILE = DATA_DIR + train_file
-TEST_DATA_FILE = DATA_DIR + test_file
+# TRAIN_DATA_FILE = DATA_DIR + train_file
+# TEST_DATA_FILE = DATA_DIR + test_file
 FINAL_TRAIN_FILE = DATA_DIR + final_train
 FINAL_TEST_FILE = DATA_DIR + final_test
 
@@ -49,18 +43,9 @@ VAL_DATA_LOADER =  MODEL_DIR + 'val_loader.pkl'
 
 input_column = 'tweet'
 output_column = ['class_encoded']
-columns_to_drop = ['tweet_id', 'tweet_favorite_count', 'tweet_retweet_count', 'tweet_source']
 NUM_CLASSES = 10
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using ", device)
-
-sample_size = 151572
-sample_size_control = 1364148
-
-epochs = 5
-
-MODEL_NAME =''
-max_length = 128
 
 
 class CustomDataset(Dataset):
@@ -129,72 +114,11 @@ class CustomDataLoader:
         return test_loader
 
 
-train_df = pd.read_csv(TRAIN_DATA_FILE)
-# test_df = pd.read_csv(TEST_DATA_FILE)
-#final_sample = pd.read_csv(FINAL_TRAIN_FILE)
 
-classes = [
-    'EATING DISORDER', 'SCHIZOPHRENIA', 'OCD', 'PTSD', 'ANXIETY',
-    'BIPOLAR', 'AUTISM', 'DEPRESSION', 'ADHD'
-]
-
-
-sampled_data = []
-
-for class_name in classes:
-    class_data = train_df[train_df['class'] == class_name].sample(sample_size, random_state=42)
-    sampled_data.append(class_data)
-
-no_disease_data = train_df[train_df['class'] == 'CONTROL'].sample(sample_size_control, random_state=42)
-sampled_data.append(no_disease_data)
-final_sample = pd.concat(sampled_data)
-final_sample = final_sample.sample(frac=1, random_state=42).reset_index(drop=True)
-print(final_sample['class'].value_counts())
-
-label_encoder = LabelEncoder()
-encoded_data = label_encoder.fit_transform(final_sample['class'])
-class_mapping = {label: cls for label, cls in zip(label_encoder.classes_, label_encoder.transform(label_encoder.classes_))}
-mapping_df = pd.DataFrame(list(class_mapping.items()), columns=['class', 'encoded_value'])
-mapping_df.to_csv(LABEL_ENCODER_FILE, index=False)
-
-
-mapping_df = pd.read_csv(LABEL_ENCODER_FILE)
-class_mapping = dict(zip(mapping_df['class'], mapping_df['encoded_value']))
-final_sample['class_encoded'] = final_sample['class'].map(class_mapping)
-final_sample = final_sample.sample(frac=1, random_state=42).reset_index(drop=True)
-
-final_sample = final_sample.drop(columns=columns_to_drop, axis=1)
-final_sample.to_csv(FINAL_TRAIN_FILE, index=False)
-
-train_data, val_data = train_test_split(final_sample, test_size=0.2, random_state=42)
-train_data = train_data.reset_index(drop=True)
-val_data = val_data.reset_index(drop=True)
-#
-data_loader = CustomDataLoader(mapping_df)
-train_loader, val_loader = data_loader.prepare_train_val_loader(train_data, val_data)
-
-# data_loader_test = CustomDataLoader(datatype='test', batch_size=32)
-# test_loader = data_loader_test.prepare_test_loader(test_df,loaded_label_encoder)
-
-#to write the files
-with open(TRAIN_DATA_LOADER, 'wb') as f:
-    pickle.dump(train_loader, f)
-with open(VAL_DATA_LOADER, 'wb') as f:
-    pickle.dump(val_loader, f)
-
-
-
-#to read the files
-# with open(TRAIN_DATA_LOADER, 'rb') as f:
-#     train_loader = pickle.load(f)
-# with open(VAL_DATA_LOADER, 'rb') as f:
-#     val_loader = pickle.load(f)
-
-
+with open(TRAIN_DATA_LOADER, 'rb') as f:
+    train_loader = pickle.load(f)
+with open(VAL_DATA_LOADER, 'rb') as f:
+    val_loader = pickle.load(f)
 for batch_X,batch_y in train_loader:
     print(batch_X)
     break
-
-
-
-# Load the data loader
