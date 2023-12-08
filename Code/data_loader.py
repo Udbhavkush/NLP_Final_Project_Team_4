@@ -16,6 +16,7 @@ import torch.optim as optim
 import torch
 from transformers import BertModel
 import torch.nn as nn
+
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.metrics import f1_score
@@ -65,7 +66,7 @@ output_column = ['class']
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using ", device)
 epochs = 5
-num_classes = 6
+num_classes = 10
 MODEL_NAME =''
 #tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 max_length = 128
@@ -152,8 +153,8 @@ class CustomDataLoader:
         return test_loader
 
 
-train_df = pd.read_csv(TRAIN_DATA_FILE)
-#test_df = pd.read_csv(TEST_DATA_FILE)
+train_df = pd.read_csv(TRAIN_DATA_FILE, encoding = "utf-8", engine='python')
+#test_df = pd.read_csv(TEST_DATA_FILE, encoding = "utf-8", engine='python')
 
 #label_encoder = LabelEncoder()
 #encoded_data = label_encoder.fit_transform(train_df['class'])
