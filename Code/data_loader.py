@@ -42,8 +42,10 @@ NUM_CLASSES = 10
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using ", device)
 
-train_df = pd.read_csv(TRAIN_DATA_FILE)
-test_df = pd.read_csv(TEST_DATA_FILE)
+
+train_df = pd.read_csv(TRAIN_DATA_FILE, encoding = "utf-8", engine = 'python')
+test_df = pd.read_csv(TEST_DATA_FILE, encoding = "utf-8", engine = 'python')
+
 
 def sample_data(df_to_sample,data_split ='train', FINAL_DF_FILE = FINAL_TRAIN_FILE):
     classes = [
