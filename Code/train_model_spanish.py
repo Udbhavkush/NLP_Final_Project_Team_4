@@ -8,22 +8,31 @@ from tqdm import tqdm
 # import argparse
 import torchmetrics
 from transformers import BertTokenizer, BertForSequenceClassification
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.metrics import f1_score
 from torch.utils.data import Dataset, DataLoader
 
 import os
-
+import string
+import re
 input_column = 'tweet'
 output_column = ['class_encoded']
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import SnowballStemmer
 # parser = argparse.ArgumentParser()
 # parser.add_argument('-c', action='store_true')
 # parser.add_argument('-e', '--excel', default='fully_processed.xlsx', type=str)
 # parser.add_argument('-n', '--name', default='DenseNet',type=str)
 # parser.add_argument('--dry', action='store_false')
 # args = parser.parse_args()
-
+train_file = 'final_train_data_esp.csv'
+MODEL_NAME = 'spanish'
+#MODEL_NAME_NLP ="bert-base-multilingual-cased"
+MODEL_NAME_NLP = "francisco-perez-sorrosal/distilbert-base-uncased-finetuned-with-spanish-tweets-clf"
 ######### all paths for the project
 OR_PATH = os.getcwd()
 os.chdir("..")
@@ -33,10 +42,11 @@ sep = os.path.sep
 os.chdir(OR_PATH)
 
 #dataset files
-train_file = 'final_train_data_esp.csv'
+
 test_file = 'final_test_data_esp.csv'
 TRAIN_DATA_FILE = DATA_DIR +train_file
 TEST_DATA_FILE = DATA_DIR +test_file
+
 
 ##model files
 # LABEL_ENCODER_FILE = MODEL_DIR + 'label_encoder.pkl'
@@ -47,12 +57,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using ", device)
 epochs = 5
 NUM_CLASSES = 10
-MODEL_NAME_NLP ="bert-base-multilingual-cased"
+
 BATCH_SIZE = 32 # --
 CONTINUE_TRAINING = False
 #CONTINUE_TRAINING = args.c
 # MODEL_NAME = 'DenseNet' # --
-MODEL_NAME = 'multilingua_spanish'
+
 
 #MODEL_NAME = args.name
 SAVE_MODEL = True # --
@@ -84,12 +94,12 @@ for batch_X,batch_y in loaded_train_loader:
 def model_definition():
 
     #model = BertModel.from_pretrained(model_name)
-    model = BertForSequenceClassification.from_pretrained(MODEL_NAME_NLP, num_labels=10)  # 10 classes
-
+    #model = BertForSequenceClassification.from_pretrained(MODEL_NAME_NLP, num_labels=10)  # 10 classes
+    model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME_NLP,num_labels =  NUM_CLASSES, ignore_mismatched_sizes=True)
     model = model.to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=LR, momentum=MOMENTUM)
-    criterion = nn.BCEWithLogitsLoss()
-    #criterion = nn.CrossEntropyLoss()
+    #criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.CrossEntropyLoss()
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=LR_PATIENCE, verbose=True)
 
     print(model, file=open(f'summary_{MODEL_NAME}.txt', 'w'))
@@ -133,29 +143,33 @@ def train_test(train_gen, test_gen, metrics_lst, metric_names, save_on, early_st
 
         with tqdm(total=len(test_gen), desc=f'Saved Model') as pbar:
             with torch.no_grad():
-                for xdata, xtarget in test_gen:
-                    xdata, xtarget = xdata.to(device), xtarget.to(device)
-
+                for step, batch in enumerate(test_gen):
+                    batch = tuple(t.to(device) for t in batch)
+                    b_input_ids, b_input_mask, b_labels = batch
                     optimizer.zero_grad()
-                    output = model(xdata)
-                    loss = criterion(output, xtarget)
-
+                    logits = model(b_input_ids, b_input_mask).logits
+                    loss = criterion(logits, b_labels)
                     steps_test += 1
                     test_loss += loss.item()
 
-                    output_arr = output.detach().cpu().numpy()
-
+                    output_arr = nn.functional.softmax(logits.detach(), dim=-1).cpu().numpy()
+                    test_target = b_labels.cpu().numpy()
                     if len(test_target_hist) == 0:
-                        test_target_hist = xtarget.cpu().numpy()
+                        test_target_hist = test_target
                     else:
-                        test_target_hist = np.vstack([test_target_hist, xtarget.cpu().numpy()])
+                        test_target_hist = np.vstack([test_target_hist, test_target])
 
-                    pred_logit = output.detach().cpu()
-                    pred_label = torch.where(pred_logit > 0.5, 1, 0)
-
+                    # pred_logit = output.detach().cpu()
+                    # pred_label = torch.where(pred_logit > 0.5, 1, 0)
+                    #pred_label = output_arr
                     test_pred_labels = np.vstack([test_pred_labels, pred_label.numpy()])
 
-                    metrics_ = [metric(pred_label, xtarget.cpu()) for metric in metrics_lst]
+                    pred_label = np.argmax(output_arr, axis=1)
+                    pred_one_hot = np.eye(NUM_CLASSES)[pred_label]
+
+                    pred_one_hot = torch.from_numpy(pred_one_hot)
+                    test_target = torch.from_numpy(test_target)
+                    metrics_ = [metric(pred_one_hot, test_target) for metric in metrics_lst]
 
                     pbar.update(1)
                     avg_test_loss = test_loss / steps_test
@@ -185,8 +199,6 @@ def train_test(train_gen, test_gen, metrics_lst, metric_names, save_on, early_st
         model.train()
 
         with tqdm(total=len(train_gen), desc=f'Epoch {epoch}') as pbar:
-            # for xdata, xtarget in train_gen:
-            #     xdata, xtarget = xdata.to(device), xtarget.to(device)
             for step, batch in enumerate(train_gen):
                 batch = tuple(t.to(device) for t in batch)
                 b_input_ids, b_input_mask, b_labels = batch
@@ -201,7 +213,6 @@ def train_test(train_gen, test_gen, metrics_lst, metric_names, save_on, early_st
                 train_loss += loss.item()
                 train_loss_item.append([epoch, loss.item()])
 
-                #output_arr = nn.functional.softmax(logits.detach(), dim=-1).cpu().numpy()  # Softmax for multi-class
                 output_arr = nn.functional.softmax(logits.detach(), dim=-1).cpu().numpy()
                 train_target = b_labels.cpu().numpy()
                 if len(output_arr_hist) == 0:
@@ -249,9 +260,9 @@ def train_test(train_gen, test_gen, metrics_lst, metric_names, save_on, early_st
                     output_arr = nn.functional.softmax(logits.detach(), dim=-1).cpu().numpy()
                     test_target = b_labels.cpu().numpy()
                     if len(test_target_hist) == 0:
-                        test_target_hist = output_arr
+                        test_target_hist = test_target
                     else:
-                        test_target_hist = np.vstack([test_target_hist, output_arr])
+                        test_target_hist = np.vstack([test_target_hist, test_target])
                     pred_label = np.argmax(output_arr, axis=1)
                     pred_one_hot = np.eye(NUM_CLASSES)[pred_label]
                     pred_one_hot = torch.from_numpy(pred_one_hot)
@@ -270,7 +281,6 @@ def train_test(train_gen, test_gen, metrics_lst, metric_names, save_on, early_st
             _ = [metric.reset() for metric in metrics_lst]
 
             met_test = test_metrics[save_on]
-
         xstrres = f'Epoch {epoch}'
         for name, value in zip(metric_names, train_metrics):
             xstrres = f'{xstrres} Train {name} {value:.5f}'
@@ -306,10 +316,30 @@ class CustomDataset(Dataset):
         self.dataframe = dataframe
         self.tokenizer_ = tokenizer
         self.max_length = max_length
+        #self.stop_words = set(stopwords.words('spanish'))
+        self.stemmer = SnowballStemmer('spanish')
     def __len__(self):
         return len(self.dataframe)
+
+    def normalize_text(self, text):
+        text = text.lower()
+        text = text.translate(str.maketrans('', '', string.punctuation))
+        text = re.sub(r'http\S+', '', text)
+        text = re.sub(r'@\w+', '', text)
+        return text
+
+    def normalize_spanish_text(self,text):
+        #from pattern.es import parse, split
+        text = text.lower()
+        text = text.translate(str.maketrans('', '', string.punctuation))
+        text = re.sub(r'[^\w\s]', '', text)
+        #tokens = word_tokenize(text)
+        #tokens = [self.stemmer.stem(word) for word in tokens]
+        #return ' '.join(tokens)
+        return text
     def __getitem__(self, idx):
         input_text = self.dataframe.loc[idx, input_column]
+        input_text = self.normalize_spanish_text(input_text)
         label_cols = output_column
         labels = self.dataframe.loc[idx, label_cols].values[0]
         one_hot = np.eye(NUM_CLASSES)[labels]#.astype(int)
@@ -355,7 +385,8 @@ if __name__ == '__main__':
     train_data = full_df[full_df['split'] == 'train'].reset_index()
     val_data = full_df[full_df['split'] == 'val'].reset_index()
 
-    tokenizer = BertTokenizer.from_pretrained(MODEL_NAME_NLP)
+    #tokenizer = BertTokenizer.from_pretrained(MODEL_NAME_NLP)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_NLP)
     data_loader = CustomDataLoader(tokenizer=tokenizer)
     train_loader, val_loader = data_loader.prepare_train_val_loader(train_data, val_data)
 
