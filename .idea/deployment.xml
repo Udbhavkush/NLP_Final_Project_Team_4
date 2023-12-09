@@ -8,6 +8,12 @@
           <mappings>
             <mapping deploy="/home/ubuntu/NLP_Final_Project_Team_4" local="$PROJECT_DIR$" web="/" />
           </mappings>
+          <excludedPaths>
+            <excludedPath path="/home/ubuntu/NLP_Final_Project_Team_4/Dataset" />
+            <excludedPath local="true" path="$PROJECT_DIR$/Dataset" />
+            <excludedPath path="/home/ubuntu/NLP_Final_Project_Team_4/Model" />
+            <excludedPath local="true" path="$PROJECT_DIR$/Model" />
+          </excludedPaths>
         </serverdata>
       </paths>
     </serverData>
