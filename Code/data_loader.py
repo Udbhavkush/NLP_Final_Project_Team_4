@@ -152,7 +152,7 @@ class CustomDataLoader:
         return test_loader
 
 
-train_df = pd.read_csv(TRAIN_DATA_FILE)
+train_df = pd.read_csv(TRAIN_DATA_FILE, engine = 'python',encoding='utf-8')
 #test_df = pd.read_csv(TEST_DATA_FILE)
 
 #label_encoder = LabelEncoder()
