@@ -1,44 +1,28 @@
-import tensorflow as tf
-import torch
-from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
-from keras.preprocessing.sequence import pad_sequences
-from sklearn.model_selection import train_test_split
-from transformers import BertTokenizer
-from transformers import AdamW, BertForSequenceClassification, get_linear_schedule_with_warmup
-from sklearn.metrics import accuracy_score, f1_score, hamming_loss, cohen_kappa_score, matthews_corrcoef
-from tqdm import trange
+
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from transformers import BertModel, BertConfig
-from torch.utils.data import random_split
-import torch.optim as optim
+
 import torch
-from transformers import BertModel
 import torch.nn as nn
 from tqdm import tqdm
-import argparse
+# import argparse
 import torchmetrics
 from transformers import BertTokenizer, BertForSequenceClassification
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.metrics import f1_score
 from torch.utils.data import Dataset, DataLoader
-from transformers import AutoModel, AdamW
-import torch.nn.functional as F
-from torch.optim import Adam
+
 import os
-from sklearn.preprocessing import LabelEncoder
-import joblib
-import pickle
+
 input_column = 'tweet'
 output_column = ['class_encoded']
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-parser = argparse.ArgumentParser()
-parser.add_argument('-c', action='store_true')
-parser.add_argument('-e', '--excel', default='fully_processed.xlsx', type=str)
-parser.add_argument('-n', '--name', default='DenseNet',type=str)
-parser.add_argument('--dry', action='store_false')
-args = parser.parse_args()
+# parser = argparse.ArgumentParser()
+# parser.add_argument('-c', action='store_true')
+# parser.add_argument('-e', '--excel', default='fully_processed.xlsx', type=str)
+# parser.add_argument('-n', '--name', default='DenseNet',type=str)
+# parser.add_argument('--dry', action='store_false')
+# args = parser.parse_args()
 
 ######### all paths for the project
 OR_PATH = os.getcwd()
@@ -63,27 +47,21 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using ", device)
 epochs = 5
 NUM_CLASSES = 10
-MODEL_NAME =''
-#tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-max_length = 128
+MODEL_NAME_NLP ="bert-base-multilingual-cased"
 BATCH_SIZE = 32 # --
 CONTINUE_TRAINING = False
 #CONTINUE_TRAINING = args.c
-# %%
-model_name = "bert-base-multilingual-cased"
 # MODEL_NAME = 'DenseNet' # --
 MODEL_NAME = 'multilingua_spanish'
 
 #MODEL_NAME = args.name
 SAVE_MODEL = True # --
 # SAVE_MODEL = args.dry
-N_EPOCHS = 25 # --
+N_EPOCHS = 5 # --
 LR = 0.01 # --
 MOMENTUM = 0.9 # --
 ES_PATIENCE = 5 # --
 LR_PATIENCE = 1 # --
-SAVE_ON = 'AUROC'
-
 MAX_LENGTH = 128
 
 
@@ -106,7 +84,7 @@ for batch_X,batch_y in loaded_train_loader:
 def model_definition():
 
     #model = BertModel.from_pretrained(model_name)
-    model = BertForSequenceClassification.from_pretrained(model_name, num_labels=10)  # 10 classes
+    model = BertForSequenceClassification.from_pretrained(MODEL_NAME_NLP, num_labels=10)  # 10 classes
 
     model = model.to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=LR, momentum=MOMENTUM)
@@ -371,13 +349,13 @@ class CustomDataLoader:
 
 
 if __name__ == '__main__':
-    train_df = pd.read_csv(TRAIN_DATA_FILE, engine='python', encoding='utf-8')
-
+    #full_df = pd.read_csv(TRAIN_DATA_FILE, engine='python', encoding='utf-8')
+    full_df = pd.read_csv(TRAIN_DATA_FILE)
     #loaded_label_encoder = joblib.load(LABEL_ENCODER_FILE)
-    train_data = train_df[train_df['split'] == 'train'].reset_index()
-    val_data = train_df[train_df['split'] == 'val'].reset_index()
+    train_data = full_df[full_df['split'] == 'train'].reset_index()
+    val_data = full_df[full_df['split'] == 'val'].reset_index()
 
-    tokenizer = BertTokenizer.from_pretrained(model_name)
+    tokenizer = BertTokenizer.from_pretrained(MODEL_NAME_NLP)
     data_loader = CustomDataLoader(tokenizer=tokenizer)
     train_loader, val_loader = data_loader.prepare_train_val_loader(train_data, val_data)
 
@@ -393,6 +371,6 @@ if __name__ == '__main__':
                     'F1Score']
 
     early_stop_patience = ES_PATIENCE
-    save_on = 'AUROC'
+    save_on = 'F1Score'
     train_test(train_loader, val_loader, metric_lst, metric_names, save_on, early_stop_patience)
 
