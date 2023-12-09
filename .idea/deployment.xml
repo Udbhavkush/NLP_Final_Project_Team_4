@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="AWS_Cloud_Connection" remoteFilesAllowedToDisappearOnAutoupload="false" confirmBeforeUploading="false" autoUploadExternalChanges="true">
+  <component name="PublishConfigData" autoUpload="Always" serverName="NLP" remoteFilesAllowedToDisappearOnAutoupload="false" confirmBeforeUploading="false" autoUploadExternalChanges="true">
     <option name="confirmBeforeUploading" value="false" />
     <serverData>
-      <paths name="AWS_Cloud_Connection">
+      <paths name="NLP">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/ubuntu/NLP_Final_Project_Team_4" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/home/ubuntu/NLP_Project" local="$PROJECT_DIR$" web="/" />
           </mappings>
           <excludedPaths>
-            <excludedPath path="/home/ubuntu/NLP_Final_Project_Team_4/Dataset" />
-            <excludedPath local="true" path="$PROJECT_DIR$/Dataset" />
-            <excludedPath path="/home/ubuntu/NLP_Final_Project_Team_4/Model" />
-            <excludedPath local="true" path="$PROJECT_DIR$/Model" />
+            <excludedPath path="/home/ubuntu/NLP_Project/Dataset/Twitter dataset" />
+            <excludedPath local="true" path="$PROJECT_DIR$/Dataset/Twitter dataset" />
           </excludedPaths>
         </serverdata>
       </paths>
