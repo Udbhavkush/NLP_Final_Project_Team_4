@@ -117,8 +117,8 @@ max_length = 128
 #
 
 
-train_df = pd.read_csv(TRAIN_DATA_FILE)
-test_df = pd.read_csv(TEST_DATA_FILE)
+train_df = pd.read_csv(TRAIN_DATA_FILE, encoding = "utf-8", engine = 'python')
+test_df = pd.read_csv(TEST_DATA_FILE, encoding = "utf-8", engine = 'python')
 #final_sample = pd.read_csv(FINAL_TRAIN_FILE)
 #final_sample_test = pd.read_csv(FINAL_TEST_FILE)
 
