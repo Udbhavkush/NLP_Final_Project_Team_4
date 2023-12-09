@@ -30,7 +30,7 @@ from nltk.stem import SnowballStemmer
 # parser.add_argument('--dry', action='store_false')
 # args = parser.parse_args()
 train_file = 'final_train_data_esp.csv'
-MODEL_NAME = 'spanish'
+MODEL_NAME = 'francisco_spanish_distilbert_tweets'
 #MODEL_NAME_NLP ="bert-base-multilingual-cased"
 MODEL_NAME_NLP = "francisco-perez-sorrosal/distilbert-base-uncased-finetuned-with-spanish-tweets-clf"
 ######### all paths for the project
