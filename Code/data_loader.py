@@ -37,16 +37,16 @@ DEV_DATA_LOADER = MODEL_DIR + 'dev_loader.pkl'
 #dataset loading
 input_column = 'tweet'
 output_column = ['class_encoded']
-columns_to_drop = ['tweet_id', 'tweet_favorite_count', 'tweet_retweet_count', 'tweet_source']
+columns_to_drop = [ 'tweet_favorite_count', 'tweet_retweet_count', 'tweet_source']
 NUM_CLASSES = 10
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using ", device)
 
 
-train_df = pd.read_csv(TRAIN_DATA_FILE, encoding = "utf-8", engine = 'python')
-test_df = pd.read_csv(TEST_DATA_FILE, encoding = "utf-8", engine = 'python')
+train_df = pd.read_csv(TRAIN_DATA_FILE)#, encoding = "utf-8", engine = 'python')
+test_df = pd.read_csv(TEST_DATA_FILE)#, encoding = "utf-8", engine = 'python')
 
-
+print(f'done reading df')
 def sample_data(df_to_sample,data_split ='train', FINAL_DF_FILE = FINAL_TRAIN_FILE):
     classes = [
         'EATING DISORDER', 'SCHIZOPHRENIA', 'OCD', 'PTSD', 'ANXIETY',
@@ -54,10 +54,10 @@ def sample_data(df_to_sample,data_split ='train', FINAL_DF_FILE = FINAL_TRAIN_FI
     ]
     if data_split == 'train':
         sample_size = 151572
-        sample_size_control = 303144
+        sample_size_control = 151572
     else :
         sample_size = 6000
-        sample_size_control = 12000
+        sample_size_control = 6000
     sampled_data = []
     for class_name in classes:
         class_data = df_to_sample[df_to_sample['class'] == class_name].sample(sample_size, random_state=42)

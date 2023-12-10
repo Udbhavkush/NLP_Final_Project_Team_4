@@ -20,9 +20,9 @@ import re
 input_column = 'tweet'
 output_column = ['class_encoded']
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.stem import SnowballStemmer
+# from nltk.corpus import stopwords
+# from nltk.tokenize import word_tokenize
+# from nltk.stem import SnowballStemmer
 from sklearn.metrics import f1_score, cohen_kappa_score, accuracy_score,  matthews_corrcoef
 
 # parser = argparse.ArgumentParser()
@@ -32,10 +32,11 @@ from sklearn.metrics import f1_score, cohen_kappa_score, accuracy_score,  matthe
 # parser.add_argument('--dry', action='store_false')
 # args = parser.parse_args()
 train_file = 'final_train_data_esp.csv'
-MODEL_NAME = 'spanish_distilbert_tweets'
+MODEL_NAME = 'distilbert-base-uncased-spanish-tweets-clf_20epoch'
 #MODEL_NAME_NLP ="bert-base-multilingual-cased"
-#MODEL_NAME_NLP = "francisco-perez-sorrosal/distilbert-base-uncased-finetuned-with-spanish-tweets-clf"
-MODEL_NAME_NLP = "dccuchile/distilbert-base-spanish-uncased-finetuned-xnli"
+MODEL_NAME_NLP = "francisco-perez-sorrosal/distilbert-base-uncased-finetuned-with-spanish-tweets-clf"
+#MODEL_NAME_NLP = "dccuchile/distilbert-base-spanish-uncased-finetuned-xnli"
+#MODEL_NAME_NLP = "dccuchile/bert-base-spanish-wwm-cased-finetuned-mldoc"
 ######### all paths for the project
 OR_PATH = os.getcwd()
 os.chdir("..")
@@ -58,10 +59,10 @@ input_column = 'tweet'
 output_column = ['class_encoded']
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using ", device)
-epochs = 5
+epochs = 30
 NUM_CLASSES = 10
 
-BATCH_SIZE = 64 # --
+BATCH_SIZE = 180 # --
 CONTINUE_TRAINING = False
 #CONTINUE_TRAINING = args.c
 # MODEL_NAME = 'DenseNet' # --
@@ -70,7 +71,7 @@ CONTINUE_TRAINING = False
 #MODEL_NAME = args.name
 SAVE_MODEL = True # --
 # SAVE_MODEL = args.dry
-N_EPOCHS = 5 # --
+N_EPOCHS = 30 # --
 LR = 0.01 # --
 MOMENTUM = 0.9 # --
 ES_PATIENCE = 5 # --
@@ -219,9 +220,6 @@ def train_test(train_gen, test_gen, metrics_lst, metric_names, save_on, early_st
                 steps_train += 1
                 train_loss += loss.item()
                 train_loss_item.append([epoch, loss.item()])
-                #pred_labels_per = logits.detach().to(torch.device('cpu')).numpy()
-
-                #pred_labels_per = nn.functional.softmax(logits.detach(), dim=-1).cpu().numpy()
                 pred_labels_per = logits.detach().to(torch.device('cpu')).numpy()
                 train_target = b_labels.cpu().numpy()
                 if len(pred_labels_per_hist) == 0:
@@ -239,18 +237,9 @@ def train_test(train_gen, test_gen, metrics_lst, metric_names, save_on, early_st
                 pred_labels_per = nn.functional.softmax(logits.detach(), dim=-1).cpu().numpy()
                 pred_label = np.argmax(pred_labels_per, axis=1)
                 pred_one_hot = np.eye(NUM_CLASSES)[pred_label]
-                #
-                # pred_one_hot = torch.from_numpy(pred_one_hot)
-                # train_target = torch.from_numpy(train_target)
 
                 pred_logits = np.vstack((pred_logits, pred_one_hot))
                 real_labels = np.vstack((real_labels, train_target))
-
-
-                # #metrics_ = [metric(pred_one_hot, train_target) for metric in metrics_lst]
-                # pbar.update(1)
-                # avg_train_loss = train_loss / steps_train
-                # pbar.set_postfix_str(f'Train Loss: {avg_train_loss:.5f}')
 
         pred_labels = pred_logits[1:]
         train_metrics = metrics_func(list_of_metrics, list_of_agg, real_labels[1:], pred_labels)
@@ -345,7 +334,7 @@ class CustomDataset(Dataset):
         self.tokenizer_ = tokenizer
         self.max_length = max_length
         #self.stop_words = set(stopwords.words('spanish'))
-        self.stemmer = SnowballStemmer('spanish')
+       # self.stemmer = SnowballStemmer('spanish')
     def __len__(self):
         return len(self.dataframe)
 
@@ -358,7 +347,7 @@ class CustomDataset(Dataset):
 
     def normalize_spanish_text(self,text):
         #from pattern.es import parse, split
-        text = text.lower()
+        #text = text.lower()
         text = text.translate(str.maketrans('', '', string.punctuation))
         text = re.sub(r'[^\w\s]', '', text)
         #tokens = word_tokenize(text)
@@ -367,7 +356,7 @@ class CustomDataset(Dataset):
         return text
     def __getitem__(self, idx):
         input_text = self.dataframe.loc[idx, input_column]
-        input_text = self.normalize_spanish_text(input_text)
+        #input_text = self.normalize_spanish_text(input_text)
         label_cols = output_column
         labels = self.dataframe.loc[idx, label_cols].values[0]
         one_hot = np.eye(NUM_CLASSES)[labels]#.astype(int)
@@ -394,9 +383,9 @@ class CustomDataLoader:
         self.batch_size = batch_size
     def prepare_train_val_loader(self, train_data, val_data):
         train_dataset = CustomDataset(train_data,tokenizer=self.tokenizer_)
-        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True,num_workers=8)
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True,num_workers=10)
         val_dataset = CustomDataset(val_data,tokenizer= self.tokenizer_)
-        val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,num_workers=8)
+        val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False,num_workers=10)
         return train_loader, val_loader
     def prepare_test_dev_loader(self, test_data, dev_data):
         test_dataset = CustomDataset(test_data, self.tokenizer_, self.max_length)
@@ -410,8 +399,9 @@ if __name__ == '__main__':
     #full_df = pd.read_csv(TRAIN_DATA_FILE, engine='python', encoding='utf-8')
     full_df = pd.read_csv(TRAIN_DATA_FILE)
     #loaded_label_encoder = joblib.load(LABEL_ENCODER_FILE)
-    train_data = full_df[full_df['split'] == 'train'].reset_index().head(10000)
-    val_data = full_df[full_df['split'] == 'val'].reset_index().head(500)
+    #full_df = full_df[full_df['class'] != 'control']
+    train_data = full_df[full_df['split'] == 'train'].reset_index()
+    val_data = full_df[full_df['split'] == 'val'].reset_index()
 
     #tokenizer = BertTokenizer.from_pretrained(MODEL_NAME_NLP)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_NLP)
@@ -425,4 +415,4 @@ if __name__ == '__main__':
     train_test(train_loader, val_loader, list_of_metrics, list_of_agg,  save_on='f1_macro', early_stop_patience=ES_PATIENCE)
 
 
-    metrics_func(list_of_metrics, list_of_agg)
+    #metrics_func(list_of_metrics, list_of_agg)
