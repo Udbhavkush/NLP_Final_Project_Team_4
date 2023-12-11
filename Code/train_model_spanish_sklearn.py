@@ -58,10 +58,10 @@ input_column = 'tweet'
 output_column = ['class_encoded']
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using ", device)
-epochs = 5
+# epochs = 15
 NUM_CLASSES = 10
 
-BATCH_SIZE = 64 # --
+BATCH_SIZE = 256 # --
 CONTINUE_TRAINING = False
 #CONTINUE_TRAINING = args.c
 # MODEL_NAME = 'DenseNet' # --
@@ -70,7 +70,7 @@ CONTINUE_TRAINING = False
 #MODEL_NAME = args.name
 SAVE_MODEL = True # --
 # SAVE_MODEL = args.dry
-N_EPOCHS = 5 # --
+N_EPOCHS = 15 # --
 LR = 0.01 # --
 MOMENTUM = 0.9 # --
 ES_PATIENCE = 5 # --
@@ -410,8 +410,8 @@ if __name__ == '__main__':
     #full_df = pd.read_csv(TRAIN_DATA_FILE, engine='python', encoding='utf-8')
     full_df = pd.read_csv(TRAIN_DATA_FILE)
     #loaded_label_encoder = joblib.load(LABEL_ENCODER_FILE)
-    train_data = full_df[full_df['split'] == 'train'].reset_index().head(10000)
-    val_data = full_df[full_df['split'] == 'val'].reset_index().head(500)
+    train_data = full_df[full_df['split'] == 'train'].reset_index().head(1000)
+    val_data = full_df[full_df['split'] == 'val'].reset_index().head(50)
 
     #tokenizer = BertTokenizer.from_pretrained(MODEL_NAME_NLP)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME_NLP)
@@ -424,5 +424,3 @@ if __name__ == '__main__':
     list_of_agg = ['avg']
     train_test(train_loader, val_loader, list_of_metrics, list_of_agg,  save_on='f1_macro', early_stop_patience=ES_PATIENCE)
 
-
-    metrics_func(list_of_metrics, list_of_agg)
