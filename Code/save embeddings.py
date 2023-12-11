@@ -77,6 +77,19 @@ def remove_urls(text):
     return cleaned_text
 train_df['tweet'] = train_df['tweet'].apply(remove_urls)
 
+# def get_cls_embedding(text):
+#     tokens = tokenizer.encode(text, add_special_tokens=True, max_length=128, truncation=True)
+#     input_ids = torch.tensor(tokens).unsqueeze(0)  # Batch size 1
+#     with torch.no_grad():
+#         outputs = model(input_ids)
+#         cls_embedding = outputs.last_hidden_state[:, 0, :]  # Extract [CLS] token embedding
+#     return cls_embedding.squeeze(axis=1).cpu().numpy()
+
+# def process_tweet(tweet):
+#     cleaned_text = remove_urls(tweet)  # Preprocess tweet
+#     cls_embedding = get_cls_embedding(cleaned_text)  # Get BERT embedding
+#     return cls_embedding
+#
 
 tweet_dataset = TweetDataset(train_df,tokenizer=tokenizer)
 
@@ -85,7 +98,7 @@ tweet_dataloader = DataLoader(tweet_dataset, batch_size=batch_size, shuffle=Fals
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
-# model = DataParallel(model)
+model = DataParallel(model)
 
 bert_embeddings = []
 tweets_ = []

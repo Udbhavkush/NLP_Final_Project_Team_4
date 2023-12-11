@@ -53,7 +53,7 @@ LABEL_ENCODER_FILE = MODEL_DIR + 'label_encoder.csv'
 #dataset loading
 input_column = 'tweet'
 output_column = ['class_encoded']
-columns_to_drop = [ 'tweet_favorite_count', 'tweet_retweet_count', 'tweet_source']
+columns_to_drop = ['tweet_id', 'tweet_favorite_count', 'tweet_retweet_count', 'tweet_source']
 NUM_CLASSES = 10
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # print("Using ", device)

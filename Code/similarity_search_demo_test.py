@@ -54,6 +54,7 @@ hnsw_index.hnsw.efConstruction = 40
 hnsw_index.add(bert_embeddings)
 
 query = "I'm having trouble sleeping and feeling low."
+# Calculate query embedding
 query_embedding = get_bert_embedding(query)
 
 k = 4
