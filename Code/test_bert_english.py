@@ -130,105 +130,38 @@ def metrics_func(metrics, aggregates, y_true, y_pred):
 
 def model_definition():
 
-    model = BertForSequenceClassification.from_pretrained(MODEL_NAME_NLP, num_labels=10)  # 10 classes
+    model = BertForSequenceClassification.from_pretrained(MODEL_NAME_NLP, num_labels=10)
+    model.load_state_dict(torch.load(f'model_BERT_ENGLISH_ADAM.pt', map_location=device))
     model = model.to(device)
     #optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
-    param_optimizer = list(model.named_parameters())
-    no_decay = ['bias', 'LayerNorm.weight']
-    optimizer_grouped_parameters = [
-        {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)],
-         'weight_decay_rate': 0.1},
-        {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)],
-         'weight_decay_rate': 0.0}
-    ]
-    optimizer = AdamW(optimizer_grouped_parameters,
-                      lr=2e-5,
-                      eps=1e-8
-                      )
+    # param_optimizer = list(model.named_parameters())
+    # no_decay = ['bias', 'LayerNorm.weight']
+    # optimizer_grouped_parameters = [
+    #     {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)],
+    #      'weight_decay_rate': 0.1},
+    #     {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)],
+    #      'weight_decay_rate': 0.0}
+    # ]
+    # optimizer = AdamW(optimizer_grouped_parameters,
+    #                   lr=2e-5,
+    #                   eps=1e-8
+    #                   )
     criterion = nn.CrossEntropyLoss()
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=LR_PATIENCE, verbose=True)
+    #scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=LR_PATIENCE, verbose=True)
 
     print(model, file=open(f'summary_{MODEL_NAME}.txt', 'w'))
 
-    return model, optimizer, criterion, scheduler
+    return model, criterion
 
-def train_test(train_gen, test_gen, metrics_lst, metric_names, save_on, early_stop_patience):
+
+def eval_model(test_gen, metrics_lst, metric_names):
 
     #save_on = metric_names.index(save_on)
 
-    model, optimizer, criterion, scheduler = model_definition()
+    model, criterion = model_definition()
     cont = 0
-    train_loss_item = list([])
     test_loss_item = list([])
-
-    train_loss_hist = list([])
-    test_loss_hist = list([])
-
-    output_arr_hist = list([])
-    pred_label_hist = list([])
-
-    train_metrics_hist = list([])
     test_metrics_hist = list([])
-
-    met_test_best = 0
-    model_save_epoch = []
-    pred_labels_per_hist = list([])
-    pred_labels_per_hist_test = list([])
-    for epoch in range(N_EPOCHS):
-        train_loss = 0
-        steps_train = 0
-        pred_logits, real_labels = np.zeros((1, NUM_CLASSES)), np.zeros((1, NUM_CLASSES))
-        train_target_hist = list([])
-        train_hist = list([])
-        test_hist = list([])
-        # --Start Model Training--
-        model.train()
-
-        with tqdm(total=len(train_gen), desc=f'Epoch {epoch}') as pbar:
-            for step, batch in enumerate(train_gen):
-                batch = tuple(t.to(device) for t in batch)
-                b_input_ids, b_input_mask, b_labels = batch
-                optimizer.zero_grad()
-                logits = model(b_input_ids, b_input_mask).logits
-                loss = criterion(logits, b_labels)
-                loss.backward()
-                optimizer.step()
-
-                cont += 1
-                steps_train += 1
-                train_loss += loss.item()
-                train_loss_item.append([epoch, loss.item()])
-                pred_labels_per = logits.detach().to(torch.device('cpu')).numpy()
-                train_target = b_labels.cpu().numpy()
-                if len(pred_labels_per_hist) == 0:
-                    pred_labels_per_hist = pred_labels_per
-                else:
-                    pred_labels_per_hist = np.vstack([pred_labels_per_hist, pred_labels_per])
-                if len(train_hist) == 0:
-                    train_hist = train_target
-                else:
-                    train_hist = np.vstack([train_hist, train_target])
-
-                pbar.update(1)
-                pbar.set_postfix_str("Train Loss: {:.5f}".format(train_loss / steps_train))
-
-                pred_labels_per = nn.functional.softmax(logits.detach(), dim=-1).cpu().numpy()
-                pred_label = np.argmax(pred_labels_per, axis=1)
-                pred_one_hot = np.eye(NUM_CLASSES)[pred_label]
-
-                pred_logits = np.vstack((pred_logits, pred_one_hot))
-                real_labels = np.vstack((real_labels, train_target))
-
-        pred_labels = pred_logits[1:]
-        train_metrics = metrics_func(list_of_metrics, list_of_agg, real_labels[1:], pred_labels)
-        avg_train_loss = train_loss / steps_train
-
-        #
-        # train_loss_hist.append(avg_train_loss)
-        # train_metrics = [metric.compute() for metric in metrics_lst]
-        #     train_metrics_hist.append([metric.compute() for metric in metrics_lst])
-        #     _ = [metric.reset() for metric in metrics_lst]
-        # --End Model Training--
 
         # --Start Model Test--
         test_loss = 0
@@ -239,18 +172,18 @@ def train_test(train_gen, test_gen, metrics_lst, metric_names, save_on, early_st
         #pred_labels_per_hist =
         met_test = 0
         model.eval()
-        with tqdm(total=len(test_gen), desc=f'Epoch {epoch}') as pbar:
+        with tqdm(total=len(test_gen), desc=f'Evaluating') as pbar:
             with torch.no_grad():
                 for step, batch in enumerate(test_gen):
                     batch = tuple(t.to(device) for t in batch)
                     b_input_ids, b_input_mask, b_labels = batch
-                    optimizer.zero_grad()
+                    #optimizer.zero_grad()
                     logits = model(b_input_ids, b_input_mask).logits
                     loss = criterion(logits, b_labels)
                     steps_test += 1
                     test_loss += loss.item()
                     cont += 1
-                    test_loss_item.append([epoch, loss.item()])
+                    #test_loss_item.append([epoch, loss.item()])
                     pred_labels_per = logits.detach().to(torch.device('cpu')).numpy()
                     if len(pred_labels_per_hist_test) == 0:
                         pred_labels_per_hist_test = pred_labels_per
@@ -274,36 +207,11 @@ def train_test(train_gen, test_gen, metrics_lst, metric_names, save_on, early_st
             pred_labels_test = pred_test_logits[1:]
             test_metrics = metrics_func(list_of_metrics, list_of_agg, real_test_labels[1:], pred_labels_test)
 
-        xstrres = "Epoch {}: ".format(epoch)
-        for met, dat in train_metrics.items():
-            xstrres = xstrres +' Train '+met+ ' {:.5f}'.format(dat)
-        print(xstrres)
-        xstrres = xstrres + " - "
+
+        xstrres = "  "
         for met, dat in test_metrics.items():
             xstrres = xstrres + ' Test '+met+ ' {:.5f}'.format(dat)
-            if met == save_on:
-                met_test = dat
         print(xstrres)
-
-        # Save Best Model
-        if met_test > met_test_best and SAVE_MODEL:
-            torch.save(model.state_dict(), f'model_{MODEL_NAME}.pt')
-
-            xdf_dset_results = val_data.copy()
-            # global var # might change this variable when test and validation are created
-            test_pred_labels = pred_labels_test.astype(int)
-            test_pred_labels_encoded = np.argmax(test_pred_labels, axis=1)
-            xdf_dset_results['results'] = test_pred_labels_encoded #[list(row) for row in test_pred_labels[1:]]
-
-            xdf_dset_results.to_excel(f'results_{MODEL_NAME}.xlsx', index=False)
-            print('Model Saved !!')
-            met_test_best = met_test
-            model_save_epoch.append(epoch)
-
-        # Early Stopping
-        if epoch - model_save_epoch[-1] > early_stop_patience:
-            print('Early Stopping !! ')
-            break
 
 
 class CustomDataset(Dataset):
@@ -366,19 +274,19 @@ class CustomDataLoader:
 
 
 if __name__ == '__main__':
-    full_df = pd.read_csv(TRAIN_DATA_FILE)
+    full_df = pd.read_csv(TEST_DATA_FILE)
     #loaded_label_encoder = joblib.load(LABEL_ENCODER_FILE)
     #full_df = full_df[full_df['class'] != 'control']
-    train_data = full_df[full_df['split'] == 'train'].reset_index()
-    val_data = full_df[full_df['split'] == 'val'].reset_index()
+    test_data = full_df[full_df['split'] == 'test'].reset_index()
+    dev_data = full_df[full_df['split'] == 'dev'].reset_index()
 
     tokenizer = BertTokenizer.from_pretrained(MODEL_NAME_NLP)
     data_loader = CustomDataLoader(tokenizer=tokenizer)
-    train_loader, val_loader = data_loader.prepare_train_val_loader(train_data, val_data)
-    early_stop_patience = ES_PATIENCE
-    save_on = 'F1Score'
+    test_loader, dev_loader = data_loader.prepare_test_dev_loader(test_data, dev_data)
 
     list_of_metrics = ['acc','f1_macro']
     list_of_agg = ['avg']
-    train_test(train_loader, val_loader, list_of_metrics, list_of_agg,  save_on='f1_macro', early_stop_patience=ES_PATIENCE)
+    eval_model(test_loader, dev_loader, list_of_metrics, list_of_agg)
+
+
 
