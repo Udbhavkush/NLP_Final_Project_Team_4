@@ -157,65 +157,65 @@ def model_definition():
 def eval_model(test_gen, metrics_lst, metric_names):
 
     #save_on = metric_names.index(save_on)
-
     model, criterion = model_definition()
     cont = 0
     test_loss_item = list([])
     test_metrics_hist = list([])
-
         # --Start Model Test--
-        test_loss = 0
-        steps_test = 0
-        test_target_hist = list([])
-        test_pred_labels = np.zeros(NUM_CLASSES)
-        pred_test_logits, real_test_labels = np.zeros((1, NUM_CLASSES)), np.zeros((1, NUM_CLASSES))
-        #pred_labels_per_hist =
-        met_test = 0
-        model.eval()
-        with tqdm(total=len(test_gen), desc=f'Evaluating') as pbar:
-            with torch.no_grad():
-                for step, batch in enumerate(test_gen):
-                    batch = tuple(t.to(device) for t in batch)
-                    b_input_ids, b_input_mask, b_labels = batch
-                    #optimizer.zero_grad()
-                    logits = model(b_input_ids, b_input_mask).logits
-                    loss = criterion(logits, b_labels)
-                    steps_test += 1
-                    test_loss += loss.item()
-                    cont += 1
-                    #test_loss_item.append([epoch, loss.item()])
-                    pred_labels_per = logits.detach().to(torch.device('cpu')).numpy()
-                    if len(pred_labels_per_hist_test) == 0:
-                        pred_labels_per_hist_test = pred_labels_per
-                    else:
-                        pred_labels_per_hist_test = np.vstack([pred_labels_per_hist_test, pred_labels_per])
-                    # output_arr = nn.functional.softmax(logits.detach(), dim=-1).cpu().numpy()
-                    test_target = b_labels.cpu().numpy()
-                    if len(test_target_hist) == 0:
-                        test_target_hist = test_target
-                    else:
-                        test_target_hist = np.vstack([test_target_hist, test_target])
+    test_loss = 0
+    steps_test = 0
+    test_target_hist = list([])
+    test_pred_labels = np.zeros(NUM_CLASSES)
+    pred_test_logits, real_test_labels = np.zeros((1, NUM_CLASSES)), np.zeros((1, NUM_CLASSES))
+    pred_labels_per_hist = list([])
+    pred_labels_per_hist_test = list([])
+    #pred_labels_per_hist =
+    met_test = 0
+    model.eval()
+    with tqdm(total=len(test_gen), desc=f'Evaluating') as pbar:
+        with torch.no_grad():
+            for step, batch in enumerate(test_gen):
+                batch = tuple(t.to(device) for t in batch)
+                b_input_ids, b_input_mask, b_labels = batch
+                #optimizer.zero_grad()
+                logits = model(b_input_ids, b_input_mask).logits
+                loss = criterion(logits, b_labels)
+                steps_test += 1
+                test_loss += loss.item()
+                cont += 1
+                #test_loss_item.append([epoch, loss.item()])
+                pred_labels_per = logits.detach().to(torch.device('cpu')).numpy()
+                if len(pred_labels_per_hist_test) == 0:
+                    pred_labels_per_hist_test = pred_labels_per
+                else:
+                    pred_labels_per_hist_test = np.vstack([pred_labels_per_hist_test, pred_labels_per])
+                # output_arr = nn.functional.softmax(logits.detach(), dim=-1).cpu().numpy()
+                test_target = b_labels.cpu().numpy()
+                if len(test_target_hist) == 0:
+                    test_target_hist = test_target
+                else:
+                    test_target_hist = np.vstack([test_target_hist, test_target])
 
-                    pbar.update(1)
-                    pbar.set_postfix_str("Test Loss: {:.5f}".format(test_loss / steps_test))
+                pbar.update(1)
+                pbar.set_postfix_str("Test Loss: {:.5f}".format(test_loss / steps_test))
 
-                    pred_labels_per = nn.functional.softmax(logits.detach(), dim=-1).cpu().numpy()
-                    pred_label = np.argmax(pred_labels_per, axis=1)
-                    pred_one_hot = np.eye(NUM_CLASSES)[pred_label]
-                    pred_test_logits = np.vstack((pred_test_logits, pred_one_hot))
-                    real_test_labels = np.vstack((real_test_labels, test_target))
-            pred_labels_test = pred_test_logits[1:]
-            test_metrics = metrics_func(list_of_metrics, list_of_agg, real_test_labels[1:], pred_labels_test)
+                pred_labels_per = nn.functional.softmax(logits.detach(), dim=-1).cpu().numpy()
+                pred_label = np.argmax(pred_labels_per, axis=1)
+                pred_one_hot = np.eye(NUM_CLASSES)[pred_label]
+                pred_test_logits = np.vstack((pred_test_logits, pred_one_hot))
+                real_test_labels = np.vstack((real_test_labels, test_target))
+        pred_labels_test = pred_test_logits[1:]
+        test_metrics = metrics_func(list_of_metrics, list_of_agg, real_test_labels[1:], pred_labels_test)
 
 
-        xstrres = "  "
-        for met, dat in test_metrics.items():
-            xstrres = xstrres + ' Test '+met+ ' {:.5f}'.format(dat)
-        print(xstrres)
+    xstrres = "  "
+    for met, dat in test_metrics.items():
+        xstrres = xstrres + ' Test '+met+ ' {:.5f}'.format(dat)
+    print(xstrres)
 
 
 class CustomDataset(Dataset):
-    def __init__(self, dataframe,  max_length = MAX_LENGTH, tokenizer = None):
+    def __init__(self, dataframe,   tokenizer = None,max_length = MAX_LENGTH):
         self.dataframe = dataframe
         self.tokenizer_ = tokenizer
         self.max_length = max_length
@@ -242,6 +242,7 @@ class CustomDataset(Dataset):
         if self.tokenizer_ == None:
             return input_text, label_tensor
         else:
+           # self.tokenizer_ = BertTokenizer.from_pretrained(MODEL_NAME_NLP)
             encoding = self.tokenizer_.encode_plus(
                 input_text,
                 add_special_tokens=True,
@@ -267,9 +268,9 @@ class CustomDataLoader:
         return train_loader, val_loader
     def prepare_test_dev_loader(self, test_data, dev_data):
         test_dataset = CustomDataset(test_data, self.tokenizer_, self.max_length)
-        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False)
+        test_loader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False,num_workers=8)
         dev_dataset = CustomDataset(dev_data, self.tokenizer_, self.max_length)
-        dev_loader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=False)
+        dev_loader = DataLoader(dev_dataset, batch_size=self.batch_size, shuffle=False,num_workers=8)
         return test_loader,dev_loader
 
 
@@ -284,9 +285,11 @@ if __name__ == '__main__':
     data_loader = CustomDataLoader(tokenizer=tokenizer)
     test_loader, dev_loader = data_loader.prepare_test_dev_loader(test_data, dev_data)
 
+    # for batch in test_loader:
+    #     print(batch)
     list_of_metrics = ['acc','f1_macro']
     list_of_agg = ['avg']
-    eval_model(test_loader, dev_loader, list_of_metrics, list_of_agg)
+    eval_model(test_loader, list_of_metrics, list_of_agg)
 
 
 
