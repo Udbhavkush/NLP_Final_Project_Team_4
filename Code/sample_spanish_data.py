@@ -53,7 +53,7 @@ LABEL_ENCODER_FILE = MODEL_DIR + 'label_encoder.csv'
 #dataset loading
 input_column = 'tweet'
 output_column = ['class_encoded']
-columns_to_drop = ['tweet_id', 'tweet_favorite_count', 'tweet_retweet_count', 'tweet_source']
+columns_to_drop = [ 'tweet_favorite_count', 'tweet_retweet_count', 'tweet_source']
 NUM_CLASSES = 10
 # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # print("Using ", device)
@@ -85,10 +85,10 @@ def sample_data(df_to_sample,data_split ='train', FINAL_DF_FILE = FINAL_TRAIN_FI
     # df_to_sample.rename(columns={'ASD': 'Austism'}, inplace=True)
     if data_split == 'train':
         sample_size = 110064
-        sample_size_control = 220128
+        sample_size_control = 90000
     else :
         sample_size = 27516
-        sample_size_control = 55032
+        sample_size_control = 27516
     sampled_data = []
     for class_name in classes:
         class_data = df_to_sample[df_to_sample['class'] == class_name].sample(sample_size, random_state=42)
@@ -104,13 +104,13 @@ def sample_data(df_to_sample,data_split ='train', FINAL_DF_FILE = FINAL_TRAIN_FI
 
     final_sample = pd.concat(sampled_data)
     final_sample = final_sample.sample(frac=1, random_state=42).reset_index(drop=True)
-    print(final_sample['class'].value_counts())
+
     mapping_df = pd.read_csv(LABEL_ENCODER_FILE)
     class_mapping = dict(zip(mapping_df['class'], mapping_df['encoded_value']))
     final_sample['class_encoded'] = final_sample['class'].map(class_mapping)
     final_sample = final_sample.sample(frac=1, random_state=42).reset_index(drop=True)
     final_sample = final_sample.drop(columns=columns_to_drop, axis=1)
-
+    print(final_sample['class'].value_counts())
     return final_sample
 
 
