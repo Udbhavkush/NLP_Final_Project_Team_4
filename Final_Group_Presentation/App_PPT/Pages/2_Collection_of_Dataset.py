@@ -12,3 +12,4 @@ st.markdown('''
     - [Link to the paper](https://arxiv.org/pdf/2302.10174.pdf)
 ''')
 
+st.image('sample_tweets.png', caption="Sample_Tweets")
