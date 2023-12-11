@@ -1,10 +1,12 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# English tweets
+
 # Reading train and test data into a pandas dataframe
 
-df_train = pd.read_csv("../Dataset/train_data.csv", encoding="utf-8")
-df_test = pd.read_csv("../Dataset/test_data.csv", encoding = "utf-8")
+df_train = pd.read_csv("../Dataset/final_train.csv", encoding="utf-8")
+df_test = pd.read_csv("../Dataset/final_test.csv", encoding = "utf-8")
 
 # Printing first 5 rows of train and test data
 
@@ -15,23 +17,24 @@ print(df_test.head(5))
 
 df_train.info()
 
-# Plotting the distribution of the classes in the train set
+# Plotting the number of disease tweets by year
 
-print(df_train['class'].unique())
+df_train_disease = df_train[df_train['class'] != "CONTROL"]
 
-# Separate the DataFrame into depression and non-depression classes
+# Convert 'day' to datetime
+df_train_disease['day'] = pd.to_datetime(df_train_disease['day'], format='%Y-%m-%d')
 
-mental_disorder_classes = df_train[df_train['class'].isin(['AUTISM', 'OCD', 'ADHD', 'BIPOLAR', 'DEPRESSION', 'EATING DISORDER', 'PTSD', 'ANXIETY','SCHIZOPHRENIA'])]
-non_diagnosed_class = df_train[df_train['class'] == 'CONTROL']
+# Extract the year from the 'day' column
+df_train_disease['year'] = df_train_disease['day'].dt.year
 
-# Plot the bar graph
-plt.bar(['Mental Disorder Classes', 'Non-Diagnosed Class'], [len(mental_disorder_classes), len(non_diagnosed_class)])
+# Group by year and category, and count the number of tweets
+df_grouped = df_train_disease.groupby(['year', 'class']).size().unstack()
 
-# Set the labels and title
-plt.xlabel('Class')
-plt.ylabel('Count')
-plt.title('Mental Disorder Classes vs Non-Diagnosed Class')
-plt.ticklabel_format(style='plain', axis='y')
-
-# Show the plot
+# Plot the temporal distribution
+plt.figure(figsize=(12, 8))
+df_grouped.plot(kind='bar', stacked=True)
+plt.title('Year-wise Distribution of Tweets by Mental Health Category')
+plt.xlabel('Year')
+plt.ylabel('Number of Tweets')
+plt.legend(title='Mental Health Category')
 plt.show()
