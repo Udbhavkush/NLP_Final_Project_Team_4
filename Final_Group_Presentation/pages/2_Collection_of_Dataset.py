@@ -9,6 +9,6 @@ st.markdown('''
         - Retweets and non language target tweets were discarded.
         - Posting period was restricted to 5 years between the first and last tweet.
     - These tweets were matched with a control group of users based on the number of tweets and posting period.
-    - [Link to the paper](https://arxiv.org/pdf/2302.10174.pdf)
+    - [Link to the paper](https://ieeexplore.ieee.org/document/10315126)
 ''')
 
