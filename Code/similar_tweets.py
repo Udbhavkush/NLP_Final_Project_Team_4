@@ -46,6 +46,15 @@ tweets = train_df['tweet'].values
 classes = train_df['class'].values
 
 
+def get_bert_embedding(text):
+    tokens = tokenizer.encode(text, add_special_tokens=True, max_length=128, truncation=True)
+    input_ids = torch.tensor(tokens).unsqueeze(0)  # Batch size 1
+    with torch.no_grad():
+        outputs = model(input_ids)
+        last_hidden_states = outputs.last_hidden_state
+    return last_hidden_states.mean(dim=1).squeeze().numpy()
+
+
 def get_cls_embedding(text):
     tokens = tokenizer.encode(text, add_special_tokens=True, max_length=128, truncation=True)
     input_ids = torch.tensor(tokens).unsqueeze(0)  # Batch size 1
@@ -53,6 +62,11 @@ def get_cls_embedding(text):
         outputs = model(input_ids)
         cls_embedding = outputs.last_hidden_state[:, 0, :]  # Extract [CLS] token embedding
     return cls_embedding.numpy()
+
+print(f'getting the embeddings: ')
+#bert_embeddings = np.array([get_bert_embedding(tweet) for tweet in tweets])
+#bert_embeddings = np.array([get_cls_embedding(tweet) for tweet in tweets])
+
 
 bert_embeddings = []  # List to store [CLS] token embeddings
 
@@ -63,24 +77,6 @@ for tweet in tqdm(tweets, desc='Getting BERT Embeddings'):
 
 bert_embeddings = np.array(bert_embeddings)
 bert_embeddings = bert_embeddings.squeeze(axis=1)
-
-
-#
-# def get_bert_embedding(text):
-#     tokens = tokenizer.encode(text, add_special_tokens=True, max_length=128, truncation=True)
-#     input_ids = torch.tensor(tokens).unsqueeze(0)  # Batch size 1
-#     with torch.no_grad():
-#         outputs = model(input_ids)
-#         last_hidden_states = outputs.last_hidden_state
-#     return last_hidden_states.mean(dim=1).squeeze().numpy()
-#
-
-print(f'getting the embeddings: ')
-#bert_embeddings = np.array([get_bert_embedding(tweet) for tweet in tweets])
-#bert_embeddings = np.array([get_cls_embedding(tweet) for tweet in tweets])
-
-
-
 
 print(f'saving the embeddings: ')
 
