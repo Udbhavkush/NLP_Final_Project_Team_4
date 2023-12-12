@@ -33,6 +33,8 @@ Reference for the dataset:
 M. E. Villa-Pérez, L. A. Trejo, M. B. Moin and E. Stroulia, "Extracting Mental Health Indicators from English and Spanish Social Media: A Machine Learning Approach," in IEEE Access, doi: 10.1109/ACCESS.2023.3332289.
 
 
+P.S. Due to the agreement with the author of the above paper, we cannot share the dataset on this repo or share the instructions to access the data from a cloud storage.
+
 
 
 
