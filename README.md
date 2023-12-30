@@ -1,6 +1,6 @@
 # Twitter Tweets Mental Health Classification
 
-Problem: Detection and preventon of anxiety or depression through tweets/post data.
+Problem: Detection and prevention of anxiety or depression through tweets/post data.
 
 Rationale: Mental health is a critical concern, and early detection and interventon can
 significantly impact individuals positvely. By developing a model to understand anxiety or
